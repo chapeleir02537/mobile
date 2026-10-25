@@ -89,34 +89,41 @@ func _say(t: String) -> void:
 
 func _on_feed() -> void:
 	if selected.is_empty():
-		return _say("Selecione uma galinha primeiro.")
+		_say("Selecione uma galinha primeiro.")
+		return
 	var c: Chick = selected[0]
 	if c.growth >= ADULT:
-		return _say("Ela já é adulta.")
+		_say("Ela já é adulta.")
+		return
 	if grain < 1:
-		return _say("Sem alimento! Plante e colha.")
+		_say("Sem alimento! Plante e colha.")
+		return
 	grain -= 1
 	c.growth += 1
 	_say("Cresceu! (%d/%d)" % [c.growth, ADULT])
 
 func _on_breed() -> void:
 	if selected.size() != 2:
-		return _say("Selecione 2 galinhas adultas.")
+		_say("Selecione 2 galinhas adultas.")
+		return
 	var a: Chick = selected[0]
 	var b: Chick = selected[1]
 	if a.growth < ADULT or b.growth < ADULT:
-		return _say("As duas precisam ser adultas.")
+		_say("As duas precisam ser adultas.")
+		return
 	if eggs.size() >= MAX_EGGS:
-		return _say("Incubadora cheia.")
+		_say("Incubadora cheia.")
+		return
 	eggs.append({"sp": Gen.breed(a.species, b.species), "t": HATCH_TIME})
 	selected.clear()
 	_say("Ovo posto para chocar!")
 
 func _on_sell() -> void:
 	if selected.is_empty():
-		return _say("Selecione uma galinha para vender.")
+		_say("Selecione uma galinha para vender.")
+		return
 	var c: Chick = selected[0]
-	var price := 10 + (20 if c.species in Gen.RARAS else (5 if not c.species in Gen.BASICAS else 0))
+	var price: int = 10 + (20 if c.species in Gen.RARAS else (5 if not c.species in Gen.BASICAS else 0))
 	coins += price
 	chickens.erase(c)
 	selected.clear()
@@ -124,7 +131,8 @@ func _on_sell() -> void:
 
 func _on_buy() -> void:
 	if coins < 5:
-		return _say("Precisa de 5 moedas.")
+		_say("Precisa de 5 moedas.")
+		return
 	coins -= 5
 	seeds += 3
 	_say("+3 sementes.")
@@ -164,7 +172,8 @@ func _tap_plot(i: int) -> void:
 	var pl: Dictionary = plots[i]
 	if pl.state == 0:
 		if seeds < 1:
-			return _say("Sem sementes.")
+			_say("Sem sementes.")
+			return
 		seeds -= 1
 		pl.state = 1
 		pl.t = GROW_TIME
@@ -184,7 +193,7 @@ func _process(delta: float) -> void:
 		e.t -= delta
 		if e.t <= 0.0 and chickens.size() < MAX_CHICKENS:
 			eggs.erase(e)
-			var new_sp := not discovered.has(e.sp)
+			var new_sp: bool = not discovered.has(e.sp)
 			_spawn(e.sp, 0)
 			_say(("NOVA ESPÉCIE: " if new_sp else "Nasceu: ") + Gen.SPECIES[e.sp].nome + "!")
 	for c in chickens:
@@ -196,7 +205,7 @@ func _process(delta: float) -> void:
 	info.text = "Moedas %d   Sementes %d   Alimento %d\n%s" % [coins, seeds, grain, msg if msg_timer > 0.0 else "Casa: guarda seus itens."]
 	dex_label.visible = show_dex
 	if show_dex:
-		var t := "COLEÇÃO (%d/%d)\n\n" % [discovered.size(), Gen.SPECIES.size()]
+		var t: String = "COLEÇÃO (%d/%d)\n\n" % [discovered.size(), Gen.SPECIES.size()]
 		for k in Gen.SPECIES:
 			t += ("• " + Gen.SPECIES[k].nome if discovered.has(k) else "• ???") + "\n"
 		dex_label.text = t
@@ -211,30 +220,30 @@ func _draw() -> void:
 	draw_string(font, Vector2(75, 85), "Casa", HORIZONTAL_ALIGNMENT_LEFT, -1, 28)
 	# plantações
 	for i in plots.size():
-		var r := _plot_rect(i)
+		var r: Rect2 = _plot_rect(i)
 		var pl: Dictionary = plots[i]
-		var col := Color(0.45, 0.3, 0.18)
+		var col: Color = Color(0.45, 0.3, 0.18)
 		if pl.state == 1:
 			col = col.lerp(Color(0.3, 0.7, 0.25), 1.0 - pl.t / GROW_TIME)
 		elif pl.state == 2:
 			col = Color(0.9, 0.75, 0.2)
 		draw_rect(r, col)
 		draw_rect(r, Color(0.25, 0.15, 0.08), false, 4.0)
-		var label := ["vazio", "crescendo", "COLHER"][pl.state]
+		var label: String = ["vazio", "crescendo", "COLHER"][pl.state]
 		draw_string(font, r.position + Vector2(20, 75), label, HORIZONTAL_ALIGNMENT_LEFT, -1, 28)
 	# galinheiro
 	draw_rect(COOP, Color(0.7, 0.55, 0.35))
 	draw_rect(COOP, Color(0.4, 0.28, 0.15), false, 6.0)
 	draw_string(font, COOP.position + Vector2(15, 35), "Galinheiro", HORIZONTAL_ALIGNMENT_LEFT, -1, 30)
 	for i in eggs.size():
-		var ep := COOP.position + Vector2(300 + i * 90, 28)
+		var ep: Vector2 = COOP.position + Vector2(300 + i * 90, 28)
 		draw_circle(ep, 16, Color(1, 0.97, 0.9))
 		draw_string(font, ep + Vector2(-12, 40), "%ds" % ceil(eggs[i].t), HORIZONTAL_ALIGNMENT_LEFT, -1, 22)
 	var sorted := chickens.duplicate()
 	sorted.sort_custom(func(a, b): return a.pos.y < b.pos.y)
 	for c in sorted:
-		var rad := 16.0 + c.growth * 6.0
-		var dir := signf(c.target.x - c.pos.x)
+		var rad: float = 16.0 + c.growth * 6.0
+		var dir: float = signf(c.target.x - c.pos.x)
 		if dir == 0.0:
 			dir = 1.0
 		if c in selected:
